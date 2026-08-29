@@ -4,10 +4,14 @@
     "private": true,
     "type": "module",
     "scripts": {
-        "build": "tsc",
-        "package": "npm run build && cp package.json dist/package.json && cd dist && zip -r ../lambda.zip .",
+        "build": "rm -rf dist lambda.zip && tsc",
+        "archive": "cp package.json dist/package.json && cd dist && zip -r ../lambda.zip .",
+        "package:js": "npm run build && npm run archive",
+        "package:mjs": "npm run build && mv dist/index.js dist/index.mjs && npm run archive",
         "clean": "rm -rf dist lambda.zip",
-        "deploy": "npm run package && aws lambda update-function-code --function-name \"$FUNCTION_NAME\" --zip-file fileb://lambda.zip && aws lambda wait function-updated --function-name \"$FUNCTION_NAME\" && aws lambda update-function-configuration --function-name \"$FUNCTION_NAME\" --handler index.handler --runtime nodejs24.x && aws lambda wait function-updated --function-name \"$FUNCTION_NAME\""
+        "upload": "aws lambda update-function-code --function-name \"$FUNCTION_NAME\" --zip-file fileb://lambda.zip && aws lambda wait function-updated --function-name \"$FUNCTION_NAME\"",
+        "deploy:js": "npm run package:js && npm run upload",
+        "deploy:mjs": "npm run package:mjs && npm run upload"
     },
     "devDependencies": {
         "@types/aws-lambda": "^8.10.162",

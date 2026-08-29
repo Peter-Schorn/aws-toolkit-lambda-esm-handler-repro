@@ -1,11 +1,8 @@
 # AWS Toolkit Lambda ESM Handler Reproduction
 
-This project reproduces an AWS Toolkit for VS Code Explorer error for a valid
-Node.js ESM Lambda package.
-
-The generated deployment ZIP contains `index.js` at its root and a root
-`package.json` with `"type": "module"`. The Lambda handler is
-`index.handler`.
+This project reproduces an AWS Toolkit for VS Code Explorer stale cache error.
+The function must first be downloaded by the Toolkit while its package contains
+`index.mjs`, then redeployed with `index.js`.
 
 ## Prerequisites
 
@@ -13,41 +10,38 @@ The generated deployment ZIP contains `index.js` at its root and a root
 - AWS CLI authenticated for the target account and region
 - An existing Node.js 24 Lambda function
 
-## Package
+## Reproduction
 
 ```sh
 npm install
-npm run package
-unzip -l lambda.zip
+FUNCTION_NAME=aws-toolkit-esm-repro npm run deploy:mjs
 ```
 
-The archive must contain `index.js` and `package.json`. It deliberately does
-not contain `index.mjs`.
-
-## Deploy
-
-Set the existing Lambda function name, then deploy:
+In AWS Toolkit Explorer, expand the function so the Toolkit downloads its
+`index.mjs` package. Then redeploy the same function:
 
 ```sh
-FUNCTION_NAME=aws-toolkit-esm-repro npm run deploy
+FUNCTION_NAME=aws-toolkit-esm-repro npm run deploy:js
 ```
 
-The script uploads `lambda.zip` and configures the function with:
-
-- Runtime: `nodejs24.x`
-- Handler: `index.handler`
-
-Invoke the function through the Lambda console to verify it succeeds.
-
-## AWS Toolkit Failure
-
-In VS Code with AWS Toolkit 4.15.0, expand the deployed function in the AWS
-Explorer. The Toolkit downloads the function, then reports:
+Refresh or expand the function in AWS Toolkit Explorer. Toolkit 4.15.0 can
+continue looking for the old `index.mjs` path and report:
 
 ```text
 Handler file /tmp/aws-toolkit-vscode/lambda/<region>/<function>/index.mjs not found in downloaded function.
 ```
 
-`index.handler` is valid because Node resolves `index.js` as ESM from the
-package's `"type": "module"` declaration. Lambda invokes the function
-successfully; only the Toolkit's local download/Explorer workflow fails.
+The generated ZIPs are intentionally distinct:
+
+- `npm run package:mjs` contains root `index.mjs` and `package.json`.
+- `npm run package:js` contains root `index.js` and `package.json`.
+
+Neither command includes the other entry-file extension because `npm run build`
+removes the previous build directory and ZIP first.
+
+## Function Configuration
+
+Create the function with the `nodejs24.x` runtime and handler `index.handler`.
+The root `package.json` declares `"type": "module"`, so Lambda correctly
+invokes either entry-file extension. The function continues to run after the
+second deployment; the failure is limited to the Toolkit's local cache.
