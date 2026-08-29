@@ -7,7 +7,7 @@
         "build": "tsc",
         "package": "npm run build && cp package.json dist/package.json && cd dist && zip -r ../lambda.zip .",
         "clean": "rm -rf dist lambda.zip",
-        "deploy": "npm run package && aws lambda update-function-code --function-name \"$FUNCTION_NAME\" --zip-file fileb://lambda.zip && aws lambda update-function-configuration --function-name \"$FUNCTION_NAME\" --handler index.handler --runtime nodejs24.x"
+        "deploy": "npm run package && aws lambda update-function-code --function-name \"$FUNCTION_NAME\" --zip-file fileb://lambda.zip && aws lambda wait function-updated --function-name \"$FUNCTION_NAME\" && aws lambda update-function-configuration --function-name \"$FUNCTION_NAME\" --handler index.handler --runtime nodejs24.x && aws lambda wait function-updated --function-name \"$FUNCTION_NAME\""
     },
     "devDependencies": {
         "@types/aws-lambda": "^8.10.162",
